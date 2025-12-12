@@ -1,0 +1,93 @@
+@startuml
+
+interface ConnectIntf {
+    + connect()
+    + send()
+    + receive()
+}
+
+interface MibIntf {
+    + create()
+    + read()
+    + update()
+    + delete()
+}
+
+interface ThreadPollIntf {
+    + enqueue()
+}
+
+struct SnmpPacketContext {
+    + raw_data : std::vector<char>
+    + client_addr : sockaddr_in
+}
+
+class ConnectMgr {
+    + init_socket()
+    + send()
+    + receive()
+}
+
+class ThreadPoll {
+    + enqueue()
+    + worker_loop()
+    - workers : vector<std::thread>
+}
+
+class WorkerTask {
+    + worker_loop()
+}
+
+class MibMgr {
+    + create()
+    + read()
+    + update()
+    + delete()
+}
+
+class SnmpListener {
+    + run_loop()
+    + start()
+    + stop()
+    - listener_thread : std::thread
+    - connectMgr : ConnectMgr
+    - threadPoll : ThreadPoll
+    - context : SnmpPacketContext
+}
+
+class SnmpProtocolHandler {
+    + process_request()
+    - resp_get()
+    - resp_get_next()
+    - resp_get_bulk()
+    - asn1_oid()
+    - asn1_str()
+    - dump_req()
+    - dump_resp()
+}
+
+class Main {
+    - connectMgmt : ConnectMgmt
+    - threadPoll : ThreadPoll
+    - mibMgr : MibMgr
+    - snmpListener : SnmpListener
+    + main()
+}
+
+Main *-- ConnectMgr
+Main *-- ThreadPoll
+Main *-- MibMgr
+Main *-- SnmpListener
+
+ThreadPoll..|> ThreadPollIntf
+ConnectMgr..|> ConnectIntf
+MibMgr ..|> MibIntf
+
+ThreadPoll o-- WorkerTask
+WorkerTask --> MibIntf : use read/update
+WorkerTask --> ConnectIntf : use send
+WorkerTask --> SnmpProtocolHandler : use proc_request
+SnmpListener --> ConnectIntf : use receive
+SnmpListener --> ThreadPollIntf : use enqueue(lambda{context, ConnectIntf, MibIntf})
+
+@enduml

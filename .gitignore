@@ -39,3 +39,10 @@
 
 # debug information files
 *.dwo
+
+# Remove the internal data of the external dependencies folder
+external/*
+!external/.gitkeep
+
+# Remove build objects
+build/
