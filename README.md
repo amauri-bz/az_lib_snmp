@@ -14,7 +14,7 @@ Header‑only SNMP library built with modern C++20. Provides lightweight, effici
 
 ### Architecture
 
-![uml](img/logo.png)
+![uml](img/az_lib_snmp.png)
 
 ---
 
