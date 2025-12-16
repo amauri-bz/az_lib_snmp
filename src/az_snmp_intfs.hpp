@@ -11,9 +11,10 @@ namespace SnmpServer {
 class MibIntf {
 public:
     virtual ~MibIntf() = default;
-    virtual void create(const OID& oid, const std::string& value) = 0;
-    virtual std::string read(const OID& oid) = 0;
-    virtual void update(const OID& oid, const std::string& value) = 0;
+    virtual void create(const OID& oid, const SnmpVariant& value) = 0;
+    virtual SnmpVariant read(const OID& oid) = 0;
+    virtual std::tuple<OID, SnmpVariant> read_next(const OID& oid) = 0;
+    virtual void update(const OID& oid, const SnmpVariant& value) = 0;
     virtual void delete_oid(const OID& oid) = 0;
 };
 

@@ -20,6 +20,8 @@ using OID = std::vector<uint32_t>;
  */
 using SnmpSequence = std::vector<SnmpValue>;
 
+using ErrorCode = uint8_t;
+
 /**
  * @brief Variant to cover the SNMP V1 basic types
  */
@@ -28,7 +30,8 @@ using SnmpVariant = std::variant<
     int64_t,          // INTEGER
     std::string,      // OCTET STRING
     OID,              // OBJECT IDENTIFIER
-    SnmpSequence      // SEQUENCE
+    SnmpSequence,     // SEQUENCE
+    ErrorCode         // ERROR TAG
 >;
 
 /**
@@ -40,16 +43,19 @@ struct SnmpPacketContext {
 };
 
 enum class DataType {
-    INTEGER       = 0x02,
-    OCTET_STRING  = 0x04,
-    VAL_NULL      = 0x05,
-    OBJECT_ID     = 0x06,
-    SEQUENCE      = 0x30,
-    GET_REQUEST   = 0xA0,
+    INTEGER          = 0x02,
+    OCTET_STRING     = 0x04,
+    VAL_NULL         = 0x05,
+    OBJECT_ID        = 0x06,
+    SEQUENCE         = 0x30,
+    NO_SUCH_NAME	 = 0x80,
+    END_OF_MIB_VIEW	 = 0x82,
+    NO_SUCH_OBJECT	 = 0x81,
+    GET_REQUEST      = 0xA0,
     GET_NEXT_REQUEST = 0xA1,
-    GET_RESPONSE  = 0xA2,
-    SET_REQUEST   = 0xA3,
-    TRAP          = 0xA4
+    GET_RESPONSE     = 0xA2,
+    SET_REQUEST      = 0xA3,
+    TRAP             = 0xA4
 };
 
 std::string DataTypeToString(DataType dt) {
@@ -59,6 +65,9 @@ std::string DataTypeToString(DataType dt) {
         case DataType::VAL_NULL:         return "VAL_NULL";
         case DataType::OBJECT_ID:        return "OBJECT_ID";
         case DataType::SEQUENCE:         return "SEQUENCE";
+        case DataType::NO_SUCH_NAME:     return "NO_SUCH_NAME";
+        case DataType::END_OF_MIB_VIEW:  return "END_OF_MIB_VIEW";
+        case DataType::NO_SUCH_OBJECT:   return "NO_SUCH_OBJECT";
         case DataType::GET_REQUEST:      return "GET_REQUEST";
         case DataType::GET_NEXT_REQUEST: return "GET_NEXT_REQUEST";
         case DataType::GET_RESPONSE:     return "GET_RESPONSE";
@@ -113,16 +122,23 @@ inline void print_hex_buffer(const Container& buffer, const std::string& message
     std::cout.copyfmt(state);
 }
 
-inline void printOid(const OID& oid) {
+inline void printOid(const OID& oid, std::string msg = "", bool lineBreak = false) {
+    std::cout << msg;
     std::cout << "{";
     for (size_t i = 0; i < oid.size(); ++i) {
         std::cout << oid[i];
         if (i + 1 < oid.size()) std::cout << ".";
     }
     std::cout << "}";
+
+    if(lineBreak)
+        std::cout << "\n";
 }
 
-inline void printVariant(const SnmpVariant& var) {
+inline void printVariant(const SnmpVariant& var, std::string msg = "", bool lineBreak = false) {
+
+    std::cout << msg;
+
     std::visit([&](auto&& arg) {
         using T = std::decay_t<decltype(arg)>;
         if constexpr (std::is_same_v<T, std::monostate>) {
@@ -146,6 +162,9 @@ inline void printVariant(const SnmpVariant& var) {
             std::cout << "]";
         }
     }, var);
+
+    if(lineBreak)
+        std::cout << "\n";
 }
 
 inline void printSnmpPdu(const SnmpPdu& pdu) {
@@ -167,8 +186,11 @@ inline void printSnmpPdu(const SnmpPdu& pdu) {
     }
 }
 
-inline void printTlv(const std::tuple<std::optional<DataType>, uint8_t, SnmpVariant>& tlv) {
+inline void printTlv(const std::tuple<std::optional<DataType>, uint8_t, SnmpVariant>& tlv,
+                std::string msg = "", bool lineBreak = false) {
     const auto& [typeOpt, len, value] = tlv;
+
+    std::cout << msg;
 
     std::cout << "TLV:";
 
@@ -186,7 +208,9 @@ inline void printTlv(const std::tuple<std::optional<DataType>, uint8_t, SnmpVari
     // Valor
     std::cout << " Value: ";
     printVariant(value);
-    std::cout << "\n";
+
+    if(lineBreak)
+        std::cout << "\n";
 }
 
 } //SnmpServer

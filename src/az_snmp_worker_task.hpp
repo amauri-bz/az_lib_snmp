@@ -16,7 +16,7 @@ inline void WorkerTask(
     int listener_socket_fd
 ) {
     // Handler is instantiated inside the worker for complete thread-safety
-    SnmpProtocolHandler handler;
+    SnmpProtocolHandler handler(mib_service);
 
     try {
         std::cout << "[Worker] Processing request from: "
@@ -26,11 +26,8 @@ inline void WorkerTask(
         // Deserialize the request
         auto snmp_pdu = handler.process_request(context->raw_data);
 
-        // Read value from the MIB (via injected interface)
-        std::string mib_value = mib_service->read(snmp_pdu.vars.at(0).oid);
-
         // Serialize the Response PDU
-        std::vector<uint8_t> response_data = handler.resp_get(context->raw_data, snmp_pdu.vars.at(0).oid, mib_value);
+        std::vector<uint8_t> response_data = handler.resp_get(snmp_pdu);
 
         // Send the response back (via injected interface and context address)
         connect_service->send(listener_socket_fd, response_data, context->client_addr);
